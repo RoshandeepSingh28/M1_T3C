@@ -1,4 +1,4 @@
-const int PIR_PIN = 2;          // PIR sensor input pin
+const int PIR_PIN = 2;          // PIR sensor input pin 
 const int LED_MOTION = 7;       // LED for motion indication
 const int TRIG_PIN = 3;         // Ultrasonic trigger pin
 const int ECHO_PIN = 4;         // Ultrasonic echo pin
@@ -14,13 +14,15 @@ void setup() {
     pinMode(LED_DISTANCE, OUTPUT);
 
     Serial.begin(9600);
-    attachInterrupt(digitalPinToInterrupt(PIR_PIN), handleMotion, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(PIR_PIN), handleMotion, RISING);
 }
 
 void loop() {
-    long distance = measureDistance();
-    handleDistanceLED(distance);
-    delay(500);
+    if (!motionFlag) {
+        long distance = measureDistance();
+        handleDistanceLED(distance);
+        delay(500);
+    }
 }
 
 long measureDistance() {
@@ -38,17 +40,17 @@ void handleDistanceLED(long distance) {
     if (distance < 50) {
         digitalWrite(LED_DISTANCE, HIGH);
         Serial.println("Ultrasonic Sensor: Object detected!");
-    } else {
+    } else if (distance > 50){
         digitalWrite(LED_DISTANCE, LOW);
     }
 }
 
 void handleMotion() {
-    if (digitalRead(PIR_PIN) == HIGH) {
-        Serial.println("PIR Sensor: Motion Detected!");
-        digitalWrite(LED_MOTION, HIGH);
-    } else {
-        Serial.println("PIR Sensor: Motion Ended!");
-        digitalWrite(LED_MOTION, LOW);
-    }
+    motionFlag = true;
+    Serial.println("PIR Sensor: Motion Detected! Stopping all activities.");
+    digitalWrite(LED_MOTION, HIGH);
+    while (digitalRead(PIR_PIN) == HIGH); // Halt execution until motion stops
+    Serial.println("PIR Sensor: Motion Ended! Resuming activities.");
+    digitalWrite(LED_MOTION, LOW);
+    motionFlag = false;
 }
